@@ -18,6 +18,7 @@ const UserEntity = new EntitySchema({
             generated: true,
         },
         user_mail: {
+            unique:true,
             type: "text",
         },
         user_password: {
