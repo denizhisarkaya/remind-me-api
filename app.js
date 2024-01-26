@@ -4,7 +4,6 @@ const typeorm = require("typeorm");
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
 const { getRepository, getManager } = require("typeorm");
-
 const { UserEntity, createDbConnection } = require('./db_connection.js');
 
 // Express uygulamasını oluşturuyoruz.
@@ -124,33 +123,3 @@ app.post('/login', async (req, res) => {
         res.status(500).send('Internal Server Error');
     }
 });
-
-
-// async function authenticateUser(user_mail, user_password) {
-//     try {
-        
-//         // Kullanıcıyı e-posta adresine göre sorgula
-//         const query = 'SELECT user_mail FROM users;';
-//         const result = await createDbConnection.query(query, [user_mail]);
-
-//         if (result.rows.length === 0) {
-//             return { success: false, message: 'Invalid email or password' };
-//         }
-
-//         const user = result.rows[0];
-
-//         // Şifreyi karşılaştır
-//         const passwordMatch = await bcrypt.compare(user_password, user.user_password);
-//         if (!passwordMatch) {
-//             return { success: false, message: 'Invalid email or password' };
-//         }
-
-//         // Kullanıcı doğrulandı
-//         return { success: true, user_id: user.user_id };
-//     } catch (error) {
-//         console.error('Error authenticating user:', error);
-//         return { success: false, message: 'An error occurred while authenticating user' };
-//     } finally {
-//         await client.end();
-//     }
-// }
