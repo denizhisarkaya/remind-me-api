@@ -1,42 +1,36 @@
 const express = require('express');
 const cors = require('cors');
-const typeorm = require("typeorm");
-const bodyParser = require('body-parser');
-const crypto = require('crypto');
-const { getRepository, getManager } = require("typeorm");
-const { UserEntity, createDbConnection } = require('./db_connection.js');
+//const typeorm = require("typeorm");
+
+const { createDbConnection, getDBConnection } = require('./database/db_connection.js');
+const userRouter = require("./routes/user/userRoutes.js");
 
 // Express uygulamasını oluşturuyoruz.
 const app = express();
 
-// Tüm rotalarda CORS'ü etkinleştir
+// Tüm rotalarda CORS'ü etkinleştiriyoruz
 app.use(cors());
 
 const server_port = 8000;
 
-// CSP başlığını ayarlayın
+// CSP başlığını ayarlıyoruz
 app.use((req, res, next) => {
     res.setHeader('Content-Security-Policy', "default-src 'self'; font-src 'self' http://localhost:8000");
     next();
 });
 
-// JSON verilerini parse etmek için body-parser'ı kullanıyoruz.
-app.use(bodyParser.json());
-
-// Oluşturulan bağlantı
-let connection;
-
-
-
+app.use('/', userRouter);
 
 // Server'ı belirtilen portta dinlemeye başlıyoruz.
 app.listen(server_port, async () => {
     try {
+        const connection = await getDBConnection();
+        // Önceden mevcut bir bağlantı varsa kapatıyoruz
         if (connection) {
             await connection.close();
         }
-        // Bağlantıyı oluştur
-        connection = await createDbConnection();
+        // Yeni bir veritabanı bağlantısı oluşturuyoruz
+        await createDbConnection();
 
         console.log(`Server ${server_port} portunda çalışıyor`);
     } catch (error) {
@@ -46,80 +40,8 @@ app.listen(server_port, async () => {
 
 
 
-// Temel bir "Hello World" endpoint'i
-app.get('/', (req, res) => {
-    res.send('Hello World!');
-});
 
 
 
-// Route to handle POST request for creating a new user
-app.post('/users', async (req, res) => {
-    try {
-        let userRepository = connection.getRepository(UserEntity);
-
-        // Extract user data from the request body
-        let { user_mail, user_password } = req.body;
-
-        // Kullanıcı şifresini hashleme fonksiyonu
-        function hashPassword(password) {
-            const hash = crypto.createHash('sha1');
-            hash.update(password);
-            return hash.digest('hex');
-        }
-
-        // Parolayı hashle
-        const hashedPassword = hashPassword(user_password);
-
-        // Create a new user entity
-        const newUser = userRepository.create({
-            user_mail,
-            user_password: hashedPassword,
-            user_created_at: new Date(),
-            user_updated_at: new Date(),
-        });
-
-        // Save the new user to the database
-        const savedUser = await userRepository.save(newUser);
-
-        res.status(201).json(savedUser);
-    } catch (error) {
-        console.error('Error creating user:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});
 
 
-
-// Route to handle POST request for user login
-app.post('/login', async (req, res) => {
-    try {
-        // Extract user data from the request body
-        let { user_mail, user_password } = req.body;
-
-        // Kullanıcı şifresini hashleme fonksiyonu
-        function hashPassword(password) {
-            const hash = crypto.createHash('sha1');
-            hash.update(password);
-            return hash.digest('hex');
-        }
-
-        // Parolayı hashle
-        const hashedPassword = hashPassword(user_password);
-
-        let userRepository = connection.getRepository(UserEntity);
-        // Veritabanından kullanıcıyı bul
-        const user = await userRepository.findOne({where: { user_mail, user_password: hashedPassword }});
-
-        // Kullanıcı yoksa hata döndür
-        if (!user) { // undefined, false, null
-            return res.status(401).json({ error: 'Invalid email or password' });
-        }
-
-        // Kullanıcı varsa başarılı giriş döndür
-        res.status(200).json({ message: 'Login successful', user });
-    } catch (error) {
-        console.error('Error logging in:', error);
-        res.status(500).send('Internal Server Error');
-    }
-});

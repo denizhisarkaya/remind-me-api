@@ -1,16 +1,14 @@
 // Express, TypeORM ve body-parser modüllerini projeye dahil ediyoruz.
-const express = require('express');
 const typeorm = require("typeorm")
-const { EntitySchema, createConnection} = require("typeorm");
+const { EntitySchema, createConnection } = require("typeorm");
 
-
-
-
+// Oluşturulan bağlantıyı saklamak için bir değişken tanımlıyoruz
+let connection;
 // User Entity
 // TypeORM'un EntitySchema sınıfını kullanarak UserEntity adında bir veritabanı şeması oluşturuyoruz.
 const UserEntity = new EntitySchema({
-    name: "User",
-    tableName: "users",
+    name: "User",  // Şema adı
+    tableName: "users",  // Veritabanındaki tablo adı
     columns: {
         user_id: {
             primary: true,
@@ -18,7 +16,7 @@ const UserEntity = new EntitySchema({
             generated: true,
         },
         user_mail: {
-            unique:true,
+            unique: true,
             type: "text",
         },
         user_password: {
@@ -35,10 +33,10 @@ const UserEntity = new EntitySchema({
 
 // Plan Entity
 // TypeORM'un EntitySchema sınıfını kullanarak PlanEntity adında bir veritabanı şeması oluşturuyoruz.
-// Bu şema "plans" tablosunu temsil eder ve "categories" tablosu ile many-to-many ilişkisi vardır.
+// Bu şema "plans" tablosunu temsil eder ve "users" tablosu ile many-to-one ilişkisi vardır.
 const PlanEntity = new EntitySchema({
-    name: "Plan",
-    tableName: "plans",
+    name: "Plan",  // Şema adı
+    tableName: "plans",   // Veritabanındaki tablo adı
     columns: {
         plan_id: {
             primary: true,
@@ -48,7 +46,7 @@ const PlanEntity = new EntitySchema({
         user_id: {
             primary: true,
             type: "integer",
-            
+
         },
         plan_text: {
             type: "text",
@@ -69,34 +67,36 @@ const PlanEntity = new EntitySchema({
             type: "timestamp",
         },
     },
-    relations: {
-        users: {
-            target: "User",
-            type: "many-to-one",
-            joinTable: true,
-            cascade: true,
+    relations: {  // İlişkiler
+        users: {  // Kullanıcılar ile ilişki
+            target: "User",  // Hedef: UserEntity
+            type: "many-to-one",  // Çoktan bire ilişki
+            joinTable: true,  // Tablo birleştirme
+            cascade: true,  // İlişkili nesneleri kaskatlı silme/güncelleme
         },
     },
 });
 
-
 // Veritabanı bağlantısı için TypeORM'un createConnection fonksiyonunu kullanıyoruz.
 async function createDbConnection() {
-    const connection = await typeorm.createConnection({
-      type: "postgres",
-      host: "localhost",
-      port: 5432,
-      username: "postgres",
-      password: "12345",
-      database: "RemindMeDb",
-      synchronize: true,
-      logging: true,
-      entities: [UserEntity, PlanEntity],
+    connection = await typeorm.createConnection({
+        type: "postgres",  // Veritabanı tipi: PostgreSQL
+        host: "localhost",  // Veritabanı sunucusu
+        port: 5432,  // Veritabanı portu
+        username: "postgres",  // Veritabanı kullanıcı adı
+        password: "12345",  // Veritabanı şifresi
+        database: "RemindMeDb",  // Veritabanı adı
+        synchronize: true,  // Entity'lerdeki değişikliklerin veritabanına otomatik yansıtılması
+        logging: true,  // SQL sorgularının konsola loglanması
+        entities: [UserEntity, PlanEntity],  // Kullanılacak entity'lerin listesi
     });
-  
+
     console.log("Database connection successful");
     return connection;
 }
 
+async function getDBConnection(){
+    return connection;
+}
 
-module.exports = { UserEntity, PlanEntity, createDbConnection };
+module.exports = { UserEntity, PlanEntity, createDbConnection, getDBConnection };
